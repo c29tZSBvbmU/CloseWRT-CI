@@ -67,6 +67,3 @@ UPDATE_VERSION() {
     done
 }
 
-mkdir fm350-modem
-cp -rf ../Modemfeed/packages/net/fm350-modem/* fm350-modem
-popd
