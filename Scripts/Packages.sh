@@ -67,6 +67,7 @@ UPDATE_VERSION() {
     done
 }
 
+# 添加第三方应用
 #UPDATE_VERSION "软件包名" "项目地址" "测试版，true，可选，默认为否"
 UPDATE_VERSION "brook" "txthinking/brook"
 UPDATE_VERSION "dns2tcp" "zfl9/dns2tcp"
@@ -87,3 +88,135 @@ UPDATE_VERSION "v2ray-plugin" "teddysun/v2ray-plugin"
 UPDATE_VERSION "v2rayA" "v2rayA/v2rayA"
 UPDATE_VERSION "xray-core" "XTLS/Xray-core"
 UPDATE_VERSION "xray-plugin" "teddysun/xray-plugin"
+
+mkdir -p kiddin9
+pushd kiddin9
+git clone --depth=1 https://github.com/kiddin9/openwrt-packages .
+popd
+
+mkdir -p Modem-Support
+pushd Modem-Support
+git clone --depth=1 https://github.com/Siriling/5G-Modem-Support .
+popd
+
+mkdir -p MyConfig
+pushd MyConfig
+git clone --depth=1 https://github.com/Siriling/OpenWRT-MyConfig .
+popd
+
+mkdir -p Modemfeed
+pushd Modemfeed
+git clone --depth=1 https://github.com/koshev-msk/modemfeed .
+popd
+
+mkdir -p package/community
+pushd package
+
+# 系统相关应用
+git clone --depth=1 https://github.com/esirplayground/luci-app-poweroff .
+
+# Diskman
+rm -rf ../package/feeds/luci/luci-app-diskman
+rm -rf ../feeds/luci/applications/luci-app-diskman
+mkdir luci-app-diskman
+cp -rf ../kiddin9/luci-app-diskman/* luci-app-diskman
+
+# Fileassistant
+mkdir luci-app-fileassistant
+cp -rf ../kiddin9/luci-app-fileassistant/* luci-app-fileassistant
+
+# Guest-wifi
+mkdir luci-app-guest-wifi
+cp -rf ../kiddin9/luci-app-guest-wifi/* luci-app-guest-wifi
+
+# Onliner
+mkdir luci-app-onliner
+cp -rf ../kiddin9/luci-app-onliner/* luci-app-onliner
+
+# Wolplus
+mkdir luci-app-wolplus
+cp -rf ../kiddin9/luci-app-wolplus/* luci-app-wolplus
+
+# RAMfree
+mkdir luci-app-ramfree
+cp -rf ../kiddin9/luci-app-ramfree/* luci-app-ramfree
+
+# NetData
+mkdir luci-app-netdata
+cp -rf ../kiddin9/luci-app-netdata/* luci-app-netdata
+
+# rtbwmon
+mkdir luci-app-rtbwmon
+cp -rf ../kiddin9/luci-app-rtbwmon/* luci-app-rtbwmon
+
+# 存储相关应用
+mkdir autoshare-samba
+mkdir luci-app-samba4
+cp -rf ../kiddin9/autoshare-samba/* autoshare-samba
+cp -rf ../kiddin9/luci-app-samba4/* luci-app-samba4
+
+# 科学上网和代理应用
+mkdir luci-app-openclash
+cp -rf ../kiddin9/luci-app-openclash/* luci-app-openclash
+cp -rf ../MyConfig/configs/istoreos/general/applications/luci-app-openclash/* luci-app-openclash
+
+# 去广告
+mkdir luci-app-adguardhome
+cp -rf ../kiddin9/luci-app-adguardhome/* luci-app-adguardhome
+cp -rf ../MyConfig/configs/istoreos/general/applications/luci-app-adguardhome/* luci-app-adguardhome
+sed -i 's/拦截DNS服务器/拦截DNS服务器（默认用户名和密码均为root）/' luci-app-adguardhome/po/zh_Hans/adguardhome.po
+sed -i 's/+PACKAGE_$(PKG_NAME)_INCLUDE_binary:adguardhome//' luci-app-adguardhome/Makefile
+
+# 内网穿透
+# mkdir luci-app-zerotier
+# cp -rf ../kiddin9/luci-app-zerotier/* luci-app-zerotier
+
+# 其他
+mkdir luci-app-socat
+cp -rf ../kiddin9/luci-app-socat/* luci-app-socat
+
+# 主题
+mkdir luci-app-argon-config
+cp -rf ../kiddin9/luci-app-argon-config/* luci-app-argon-config
+
+# iStore应用
+mkdir taskd
+mkdir luci-lib-taskd
+mkdir luci-lib-xterm
+mkdir luci-app-store
+mkdir quickstart
+mkdir luci-app-quickstart
+cp -rf ../kiddin9/taskd/* taskd
+cp -rf ../kiddin9/luci-lib-taskd/* luci-lib-taskd
+cp -rf ../kiddin9/luci-lib-xterm/* luci-lib-xterm
+cp -rf ../kiddin9/luci-app-store/* luci-app-store
+cp -rf ../kiddin9/quickstart/* quickstart
+cp -rf ../kiddin9/luci-app-quickstart/* luci-app-quickstart
+
+# 5G通信模组拨号工具
+mkdir quectel_QMI_WWAN
+mkdir fibocom_QMI_WWAN
+mkdir quectel_cm_5G
+cp -rf ../Modem-Support/quectel_QMI_WWAN/* quectel_QMI_WWAN
+cp -rf ../Modem-Support/fibocom_QMI_WWAN/* fibocom_QMI_WWAN
+cp -rf ../Modem-Support/quectel_cm_5G/* quectel_cm_5G
+
+# 5G模组短信插件
+mkdir sms-tool
+mkdir luci-app-sms-tool
+cp -rf ../Modem-Support/sms-tool/* sms-tool
+cp -rf ../Modem-Support/luci-app-sms-tool/* luci-app-sms-tool
+cp -rf ../MyConfig/configs/istoreos/general/applications/luci-app-sms-tool/* luci-app-sms-tool
+
+# 5G模组管理插件+AT工具
+mkdir luci-app-modem
+cp -rf ../Modem-Support/luci-app-modem/* luci-app-modem
+sed -i "/kmod-pcie_mhi/d" luci-app-modem/Makefile
+
+# fm350 老毛子拨号
+mkdir luci-proto-fm350
+cp -rf ../Modemfeed/luci/protocols/luci-proto-fm350/* luci-proto-fm350
+
+mkdir fm350-modem
+cp -rf ../Modemfeed/packages/net/fm350-modem/* fm350-modem
+popd
