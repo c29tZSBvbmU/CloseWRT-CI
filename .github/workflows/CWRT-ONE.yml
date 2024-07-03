@@ -43,7 +43,7 @@ jobs:
       #默认源码
       WRT_URL: https://github.com/c29tZSBvbmU/immortalwrt-mt798x.git
       #默认分支
-      WRT_BRANCH: test
+      WRT_BRANCH: openwrt-21.02
       #插件调整
       WRT_PACKAGE: ${{inputs.PACKAGE}}
       #仅输出配置文件
