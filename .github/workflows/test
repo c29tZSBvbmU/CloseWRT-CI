@@ -1,201 +1,52 @@
-#!/bin/bash
+#CI项目
+name: CWRT-ONE
 
-#安装和更新软件包
-UPDATE_PACKAGE() {
-	local PKG_NAME=$1
-	local PKG_REPO=$2
-	local PKG_BRANCH=$3
-	local PKG_SPECIAL=$4
-	local REPO_NAME=$(echo $PKG_REPO | cut -d '/' -f 2)
+#CI计划
+on:
+  #自动编译：每天早上4点
+  #schedule:
+    #- cron: 0 20 * * *
+  #手动编译
+  workflow_dispatch:
+    inputs:
+      TEST:
+        description: '仅输出配置文件，不编译固件。'
+        default: 'false'
+        required: false
+        type: boolean
+      PACKAGE:
+        description: '手动调整插件包，仅限一个。'
+        required: false
+        type: string
 
-	rm -rf $(find ../feeds/luci/ ../feeds/packages/ -maxdepth 3 -type d -iname "*$PKG_NAME*" -prune)
+#CI权限
+permissions: write-all
 
-	git clone --depth=1 --single-branch --branch $PKG_BRANCH "https://github.com/$PKG_REPO.git"
-
-	if [[ $PKG_SPECIAL == "pkg" ]]; then
-		cp -rf $(find ./$REPO_NAME/*/ -maxdepth 3 -type d -iname "*$PKG_NAME*" -prune) ./
-		rm -rf ./$REPO_NAME/
-	elif [[ $PKG_SPECIAL == "name" ]]; then
-		mv -f $REPO_NAME $PKG_NAME
-	fi
-}
-
-#UPDATE_PACKAGE "包名" "项目地址" "项目分支" "pkg/name，可选，pkg为从大杂烩中单独提取包名插件；name为重命名为包名"
-UPDATE_PACKAGE "design" "gngpp/luci-theme-design" "js"
-UPDATE_PACKAGE "design-config" "gngpp/luci-app-design-config" "master"
-UPDATE_PACKAGE "argon" "jerrykuku/luci-theme-argon" "master"
-UPDATE_PACKAGE "argon-config" "jerrykuku/luci-app-argon-config" "master"
-
-UPDATE_PACKAGE "openclash" "vernesong/OpenClash" "dev" "pkg"
-UPDATE_PACKAGE "passwall" "xiaorouji/openwrt-passwall" "main"
-UPDATE_PACKAGE "ssr-plus" "fw876/helloworld" "master"
-
-UPDATE_PACKAGE "gecoosac" "lwb1978/openwrt-gecoosac" "main"
-
-#更新软件包版本
-UPDATE_VERSION() {
-	local PKG_NAME=$1
-	local PKG_REPO=$2
-	local PKG_MARK=${3:-not}
-	local PKG_FILES=$(find ./ ../feeds/packages/ -maxdepth 3 -type f -wholename "*/$PKG_NAME/Makefile")
-
-    echo " "
-
-    if [ -z "$PKG_FILES" ]; then
-        echo "$PKG_NAME not found!"
-        return
-    fi
-
-    echo "$PKG_NAME version update has started!"
-
-    local PKG_VER=$(curl -sL "https://api.github.com/repos/$PKG_REPO/releases" | jq -r "map(select(.prerelease|$PKG_MARK)) | first | .tag_name")
-    local NEW_VER=$(echo $PKG_VER | sed "s/.*v//g; s/_/./g")
-    local NEW_HASH=$(curl -sL "https://codeload.github.com/$PKG_REPO/tar.gz/$PKG_VER" | sha256sum | cut -b -64)
-
-    for PKG_FILE in $PKG_FILES; do
-        local OLD_VER=$(grep -Po "PKG_VERSION:=\K.*" "$PKG_FILE")
-
-        echo "$OLD_VER $PKG_VER $NEW_VER $NEW_HASH"
-
-        if [[ $NEW_VER =~ ^[0-9].* ]] && dpkg --compare-versions "$OLD_VER" lt "$NEW_VER"; then
-            sed -i "s/PKG_VERSION:=.*/PKG_VERSION:=$NEW_VER/g" "$PKG_FILE"
-            sed -i "s/PKG_HASH:=.*/PKG_HASH:=$NEW_HASH/g" "$PKG_FILE"
-            echo "$PKG_FILE version has been updated!"
-        else
-            echo "$PKG_FILE version is already the latest!"
-        fi
-    done
-}
-
-# 添加第三方应用
-mkdir -p kiddin9
-pushd kiddin9
-git clone --depth=1 https://github.com/kiddin9/openwrt-packages .
-popd
-
-mkdir -p Modem-Support
-pushd Modem-Support
-git clone --depth=1 https://github.com/Siriling/5G-Modem-Support .
-popd
-
-mkdir -p MyConfig
-pushd MyConfig
-git clone --depth=1 https://github.com/Siriling/OpenWRT-MyConfig .
-popd
-
-mkdir -p Modemfeed
-pushd Modemfeed
-git clone --depth=1 https://github.com/koshev-msk/modemfeed .
-popd
-
-mkdir -p package/community
-pushd package
-
-# 系统相关应用
-git clone --depth=1 https://github.com/esirplayground/luci-app-poweroff .
-
-# Diskman
-rm -rf ../package/feeds/luci/luci-app-diskman
-rm -rf ../feeds/luci/applications/luci-app-diskman
-mkdir luci-app-diskman
-cp -rf ../kiddin9/luci-app-diskman/* luci-app-diskman
-
-# Fileassistant
-mkdir luci-app-fileassistant
-cp -rf ../kiddin9/luci-app-fileassistant/* luci-app-fileassistant
-
-# Guest-wifi
-mkdir luci-app-guest-wifi
-cp -rf ../kiddin9/luci-app-guest-wifi/* luci-app-guest-wifi
-
-# Onliner
-mkdir luci-app-onliner
-cp -rf ../kiddin9/luci-app-onliner/* luci-app-onliner
-
-# Wolplus
-mkdir luci-app-wolplus
-cp -rf ../kiddin9/luci-app-wolplus/* luci-app-wolplus
-
-# RAMfree
-mkdir luci-app-ramfree
-cp -rf ../kiddin9/luci-app-ramfree/* luci-app-ramfree
-
-# NetData
-mkdir luci-app-netdata
-cp -rf ../kiddin9/luci-app-netdata/* luci-app-netdata
-
-# rtbwmon
-mkdir luci-app-rtbwmon
-cp -rf ../kiddin9/luci-app-rtbwmon/* luci-app-rtbwmon
-
-# 存储相关应用
-mkdir autoshare-samba
-mkdir luci-app-samba4
-cp -rf ../kiddin9/autoshare-samba/* autoshare-samba
-cp -rf ../kiddin9/luci-app-samba4/* luci-app-samba4
-
-# 科学上网和代理应用
-mkdir luci-app-openclash
-cp -rf ../kiddin9/luci-app-openclash/* luci-app-openclash
-cp -rf ../MyConfig/configs/istoreos/general/applications/luci-app-openclash/* luci-app-openclash
-
-# 去广告
-mkdir luci-app-adguardhome
-cp -rf ../kiddin9/luci-app-adguardhome/* luci-app-adguardhome
-cp -rf ../MyConfig/configs/istoreos/general/applications/luci-app-adguardhome/* luci-app-adguardhome
-sed -i 's/拦截DNS服务器/拦截DNS服务器（默认用户名和密码均为root）/' luci-app-adguardhome/po/zh_Hans/adguardhome.po
-sed -i 's/+PACKAGE_$(PKG_NAME)_INCLUDE_binary:adguardhome//' luci-app-adguardhome/Makefile
-
-# 内网穿透
-# mkdir luci-app-zerotier
-# cp -rf ../kiddin9/luci-app-zerotier/* luci-app-zerotier
-
-# 其他
-mkdir luci-app-socat
-cp -rf ../kiddin9/luci-app-socat/* luci-app-socat
-
-# 主题
-mkdir luci-app-argon-config
-cp -rf ../kiddin9/luci-app-argon-config/* luci-app-argon-config
-
-# iStore应用
-mkdir taskd
-mkdir luci-lib-taskd
-mkdir luci-lib-xterm
-mkdir luci-app-store
-mkdir quickstart
-mkdir luci-app-quickstart
-cp -rf ../kiddin9/taskd/* taskd
-cp -rf ../kiddin9/luci-lib-taskd/* luci-lib-taskd
-cp -rf ../kiddin9/luci-lib-xterm/* luci-lib-xterm
-cp -rf ../kiddin9/luci-app-store/* luci-app-store
-cp -rf ../kiddin9/quickstart/* quickstart
-cp -rf ../kiddin9/luci-app-quickstart/* luci-app-quickstart
-
-# 5G通信模组拨号工具
-mkdir quectel_QMI_WWAN
-mkdir fibocom_QMI_WWAN
-mkdir quectel_cm_5G
-cp -rf ../Modem-Support/quectel_QMI_WWAN/* quectel_QMI_WWAN
-cp -rf ../Modem-Support/fibocom_QMI_WWAN/* fibocom_QMI_WWAN
-cp -rf ../Modem-Support/quectel_cm_5G/* quectel_cm_5G
-
-# 5G模组短信插件
-mkdir sms-tool
-mkdir luci-app-sms-tool
-cp -rf ../Modem-Support/sms-tool/* sms-tool
-cp -rf ../Modem-Support/luci-app-sms-tool/* luci-app-sms-tool
-cp -rf ../MyConfig/configs/istoreos/general/applications/luci-app-sms-tool/* luci-app-sms-tool
-
-# 5G模组管理插件+AT工具
-mkdir luci-app-modem
-cp -rf ../Modem-Support/luci-app-modem/* luci-app-modem
-sed -i "/kmod-pcie_mhi/d" luci-app-modem/Makefile
-
-# fm350 老毛子拨号
-mkdir luci-proto-fm350
-cp -rf ../Modemfeed/luci/protocols/luci-proto-fm350/* luci-proto-fm350
-
-mkdir fm350-modem
-cp -rf ../Modemfeed/packages/net/fm350-modem/* fm350-modem
-popd
+#CI任务
+jobs:
+  wrt_config:
+    #调用公用编译核心WRT-CORE.yml
+    uses: ./.github/workflows/WRT-CORE.yml
+    with:
+      #编译平台
+      WRT_TARGET: MTK-7981
+      #默认主题
+      WRT_THEME: argon
+      #默认主机名
+      WRT_NAME: immortalwrt
+      #默认WIFI名
+      WRT_WIFI: WIFI
+      #默认密码，仅作提示，修改无用
+      WRT_PW: 无
+      #默认地址
+      WRT_IP: 192.168.10.1
+      #默认源码
+      WRT_URL: https://github.com/c29tZSBvbmU/immortalwrt-mt798x.git
+      #默认分支
+      WRT_BRANCH: test
+      #插件调整
+      WRT_PACKAGE: ${{inputs.PACKAGE}}
+      #仅输出配置文件
+      WRT_TEST: ${{inputs.TEST || 'false'}}
+      #内存压缩，256内存推荐开启
+      WRT_SHRINK: true
